@@ -5,5 +5,3 @@ metadata:
   namespace: rabbitnest
 data:
   NODE_ENV: production
-  RABBITMQ_HOST: rabbitmq
-  RABBITMQ_PORT: "5672"
