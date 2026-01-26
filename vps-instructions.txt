@@ -1,0 +1,151 @@
+1. update nest cli
+
+2. "build": "nest build gateway && nest build catalog && nest build media && nest build search",
+
+    "start:prod:gateway": "node dist/apps/gateway/main.js",
+    "start:prod:catalog": "node dist/apps/catalog/main.js",
+    "start:prod:media": "node dist/apps/media/main.js",
+    "start:prod:search": "node dist/apps/search/main.js"
+
+
+SSH into VPS
+ssh root@<VPS_IP>
+
+
+Update server packages
+apt update -y
+apt upgrade -y
+
+Install 
+
+apt install -y git nginx curl nano
+
+
+Enable + start Nginx:
+
+systemctl enable --now nginx
+
+
+
+
+
+curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+apt install -y nodejs
+node -v
+npm -v
+
+
+
+
+Install Docker
+
+apt install -y docker.io
+systemctl enable --now docker
+docker --version
+
+
+
+Start RabbitMQ
+
+docker rm -f rabbitmq 2>/dev/null || true
+docker run -d --name rabbitmq --restart unless-stopped -p 127.0.0.1:5672:5672 -p 127.0.0.1:15672:15672 rabbitmq:3-management
+
+
+docker ps
+
+
+
+Enable basic firewall
+
+apt install -y ufw
+ufw allow OpenSSH
+ufw allow 80/tcp
+ufw enable
+ufw status
+
+
+
+On VPS
+git clone https://sangammukherjee:<token>@github.com/sangammukherjee/nestjs-microservices-course.git nestjs-microservices
+cd /var/www/nestjs-microservices
+
+
+Create .env on the VPS
+cd /var/www/nestjs-microservices
+nano .env
+
+
+
+Install deps + build
+cd /var/www/nestjs-microservices
+npm ci
+npm run build
+
+
+verify - ls dist/apps
+
+
+Install PM2 + start all 4 services
+
+npm i -g pm2
+pm2 -v
+
+
+Create PM2 ecosystem file:
+nano ecosystem.config.cjs
+
+
+
+module.exports = {
+  apps: [
+    { name: "gateway", script: "dist/apps/gateway/main.js", cwd: "/root/nestjs-microservices" },
+    { name: "catalog", script: "dist/apps/catalog/main.js", cwd: "/root/nestjs-microservices" },
+    { name: "media", script: "dist/apps/media/main.js", cwd: "/root/nestjs-microservices" },
+    { name: "search", script: "dist/apps/search/main.js", cwd: "/root/nestjs-microservices" },
+  ],
+};
+
+
+
+Start:
+pm2 start ecosystem.config.cjs
+pm2 list
+pm2 logs
+
+
+Enable auto-start on reboot:
+pm2 save
+pm2 startup
+
+
+Configure Nginx
+Create site config:
+
+nano /etc/nginx/sites-available/nestjs-microservices
+
+
+
+server {
+  listen 80;
+  server_name _;
+
+  location / {
+    proxy_pass http://127.0.0.1:4000;
+
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Real-IP $remote_addr;
+  }
+}
+
+
+
+
+enable 
+rm -f /etc/nginx/sites-enabled/default
+ln -s /etc/nginx/sites-available/nestjs-microservices /etc/nginx/sites-enabled/
+nginx -t
+systemctl reload nginx
+
