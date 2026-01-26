@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: catalog
+  namespace: rabbitnest
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: catalog
+  template:
+    metadata:
+      labels:
+        app: catalog
+    spec:
+      containers:
+      - name: catalog
+        image: ashwinsai22/nestjs-microservices-rabbitmq:latest
+        command: ["node", "dist/apps/catalog/main.js"]
+        envFrom:
+        - configMapRef:
+            name: app-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: catalog
+  namespace: rabbitnest
+spec:
+  selector:
+    app: catalog
+  ports:
+  - port: 3000

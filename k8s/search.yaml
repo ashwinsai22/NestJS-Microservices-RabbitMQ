@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: search
+  namespace: rabbitnest
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: search
+  template:
+    metadata:
+      labels:
+        app: search
+    spec:
+      containers:
+      - name: search
+        image: ashwinsai22/nestjs-microservices-rabbitmq:latest
+        command: ["node", "dist/apps/search/main.js"]
+        envFrom:
+        - configMapRef:
+            name: app-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: search
+  namespace: rabbitnest
+spec:
+  selector:
+    app: search
+  ports:
+  - port: 3000
