@@ -22,6 +22,8 @@ spec:
         envFrom:
         - configMapRef:
             name: app-config
+        - secretRef:
+          name: rabbitnest-secrets
 ---
 apiVersion: v1
 kind: Service
